@@ -1,0 +1,91 @@
+from math import *
+from operator import index
+
+# !!! Перед использованием сохранить и закрыть файл эксель
+# библиотеку устанавливаем командой pip install openpyxl
+
+from openpyxl import load_workbook # импорт библиотеки для экселя
+
+fn = r'C:\Users\yaroslav\Documents\СИТРЭС\Расчёт бетона.xlsx' # Указать путь до excel файла
+
+wb = load_workbook(fn)
+print(wb.sheetnames)
+ws = wb['atoms'] # Написать название листа, на котором будем работать
+
+a1 = 0.67
+a2 = 1.0
+c1 = 0.33
+c2 = 0.5
+d1 = 0.37
+d2 = 0.64
+alpha = 0.55
+beta = 18.0
+sumviv = 0.07459 # Сечение выведения быстрых нейтронов
+
+P = 0.42
+T = 20.057
+G = 0.05558
+# Подставить свои
+
+t = [0, 10, 20, 40, 60, 80, 120, 160, 200]
+print('Коэффициенты накопления промежуточных нейтронов: \n')
+for x in t:
+    x = float(x)
+    print(t.index(x))
+    print("при x =", x, end=" :      ")
+    lgK1 = (a1 * (1 - exp(-1 * c1 * sumviv * x)) + d1) * log10(P) + a2 * (1 - exp(-1 * c2 * sumviv * x)) + d2
+    K1 = 10 ** ((a1 * (1 - exp(-1 * c1 * sumviv * x)) + d1) * log10(P) + a2 * (1 - exp(-1 * c2 * sumviv * x)) + d2)
+
+    first_row = 6 # Строка, с которой начинаем вставлять значения
+    ws['Q' + str(t.index(x) + first_row)] = round(lgK1, 6)
+    # Заносим данные в столбик Q, в строку с индексом, равным номеру текущего х в списке t. round округляет значение до
+    # 6 знаков после запятой.
+
+    ws['R' + str(t.index(x) + first_row)] = round(K1, 6)
+    # То же самое, как в предыдущей строке, но для К1
+
+    print("Lg Kпн", lgK1, end=" :      ")
+    print("Kпн = ", K1)
+print(500 * "-")
+
+L = []
+
+print('Коэффициенты накопления тепловых нейтронов : \n')
+for x in t:
+    x = float(x)
+    print("при x =", x, end=" :      ")
+    lgK2 = ((8 + (1 - exp(-1 * alpha * sumviv * x)) * beta) * (log10(T) + 1.5)) ** 0.5 - 6
+    K2 = 10 ** (((8 + (1 - exp(-1 * alpha * sumviv * x)) * beta) * (log10(T) + 1.5)) ** 0.5 - 6)
+
+    first_row = 6
+    ws['S' + str(t.index(x) + first_row)] = round(lgK2, 6)
+    ws['T' + str(t.index(x) + first_row)] = round(K2, 6)
+
+    print("Lg Kтн", lgK2, end=" :      ")
+    print("Kтн = ", K2)
+    L.append(K2)
+print(500 * "-")
+
+i = 0
+print('Коэффициенты накопления захватного гамма-излучения : \n')
+for x in t:
+    K = L[i]
+    x = float(x)
+    print("при x =", x, end=" :      ")
+    lgK3 = 2.43 * (1 - exp(-0.0278 * x)) - 0.62 + (log10(K) + log10(G)) * (0.34 * (1 - exp(-0.0218 * x)) + 0.1)
+    K3 = 10 ** (2.43 * (1 - exp(-0.0278 * x)) - 0.62 + (log10(K) + log10(G)) * (0.34 * (1 - exp(-0.0218 * x)) + 0.1))
+
+    first_row = 6
+    ws['U' + str(t.index(x) + first_row)] = round(lgK3, 6)
+    ws['V' + str(t.index(x) + first_row)] = round(K3, 6)
+
+    print("Lg Kтн", lgK3, end=" :      ")
+    print("Kтн = ", K3)
+    i += 1
+
+print(500 * "-")
+
+wb.save(fn)
+wb.close()
+# Команды для сохранения и закрытия файла эксель(?)
+
